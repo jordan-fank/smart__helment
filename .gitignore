@@ -1,0 +1,24 @@
+# Build artifacts
+*.o
+*.d
+*.crf
+*.map
+*.hex
+*.axf
+*.lst
+*.s
+
+# Keil/MDK files
+*.uvguix.*
+*.uvoptx
+*.uvprojx
+*.dep
+
+# User cache
+.npm-cache/
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
