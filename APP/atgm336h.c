@@ -183,6 +183,38 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 		
 	}
+	
+	
+		//第一步 确认是目标串口
+	if(huart->Instance == USART3)
+	{
+		//第二步 停止DMA传输，空闲中断意味着发送停止，所以停止DMA等待
+		HAL_UART_DMAStop(huart);
+
+		//第三步 将DMA缓冲区的有效数据复制到待处理缓冲区
+		if(Size < uart_dma_buffer_len3)
+		{
+			memcpy(uart_dma_buffer3, uart_rx_dma_buffer3, Size);
+			uart_dma_buffer3[Size] = '\0';
+
+			// 只有收到MQTT命令才设置标志位，忽略OK等AT响应
+			if(strstr((char *)uart_dma_buffer3, "+MQTTSUBRECV") != NULL)
+			{
+				cmd_flag = 1;
+			}
+		}
+
+		//清空DMA接收缓冲区
+		memset(uart_rx_dma_buffer3, 0, sizeof(uart_rx_dma_buffer3));
+
+		//重新启动下一次DMA空闲接受中断
+		HAL_UARTEx_ReceiveToIdle_DMA(&huart3, uart_rx_dma_buffer3, sizeof(uart_rx_dma_buffer3));
+
+		//关闭DMA半满中断
+		__HAL_DMA_DISABLE_IT(&hdma_usart3_rx, DMA_IT_HT);
+	}
+	
+	
 }
 
 

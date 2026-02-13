@@ -85,6 +85,22 @@ void asrpro_task(void)
 		{
 			oled_page = 6;
 		}
+		else if(strstr((char*)uart_rx_buffer, "LED_ON"))
+		{
+			LED_ON_flag = 1;
+		}
+		else if(strstr((char*)uart_rx_buffer, "LED_OFF"))
+		{
+			LED_ON_flag = 0;
+		}
+		else if(strstr((char*)uart_rx_buffer, "FAN_ON"))
+		{
+			FAN_ON_flag = 1;
+		}
+		else if(strstr((char*)uart_rx_buffer, "FAN_OFF"))
+		{
+			FAN_ON_flag = 0;
+		}
 		
 		//第五步 清理缓冲区和存储指针
 		memset(uart_rx_buffer,0,uart_rx_index);

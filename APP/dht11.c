@@ -114,10 +114,14 @@ void dht11_task(void) {
     if (DHT11_Read_Data(&temp, &humi)) {
 
         printf("temp:%.1f,humi:%.1f\r\n", temp, humi);
-		
-		temp_flag = (temp > 40);
+
+		// 只在温度异常时设置标志位，不自动清零（由语音模块清零）
+		if (temp > 40) {
+			if (temp_flag == 0)  // 只报警一次
+				temp_flag = 1;
+		}
     } else {
-        // 也� �以打印错误信息方便调试
+        // 也� �以打印错误信息方便调试
         printf("DHT11_Error\r\n"); 
     }
 }

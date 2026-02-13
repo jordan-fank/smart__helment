@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能头盔监控系统</title>
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #141926;
+            --surface2: #1c2333;
+            --border: #2a3146;
+            --text: #e2e8f0;
+            --text2: #94a3b8;
+            --accent: #3b82f6;
+            --green: #22c55e;
+            --red: #ef4444;
+            --orange: #f59e0b;
+            --radius: 12px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* === 布局 === */
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+
+        /* === 侧边栏 === */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 28px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+        }
+        .logo-text { font-size: 16px; font-weight: 700; }
+
+        /* 侧边栏 - 设备状态 */
+        .device-block { display: flex; flex-direction: column; gap: 16px; }
+        .device-block h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); }
+        .device-status {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--surface2); border-radius: 8px; padding: 12px;
+        }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot.on  { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,.6); }
+        .dot.off { background: var(--red); }
+        .device-status span { font-size: 13px; }
+        .device-status small { font-size: 11px; color: var(--text2); margin-left: auto; }
+
+        /* 侧边栏 - 报警面板 */
+        .alarm-list { display: flex; flex-direction: column; gap: 8px; }
+        .alarm-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 8px;
+            background: var(--surface2); font-size: 13px;
+        }
+        .alarm-row .dot.alert { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,.6); animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: .4; } }
+
+        /* === 主内容区 === */
+        .main {
+            padding: 28px 32px;
+            display: flex; flex-direction: column; gap: 24px;
+            overflow-y: auto;
+        }
+
+        /* 顶部警告条 */
+        .alert-bar {
+            background: rgba(239,68,68,.12);
+            border: 1px solid rgba(239,68,68,.3);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            font-size: 14px;
+            color: #fca5a5;
+            display: none;
+        }
+        .alert-bar.show { display: flex; align-items: center; gap: 10px; }
+        .alert-bar strong { color: var(--red); }
+
+        /* 数据卡片网格 */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+        .metric {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: border-color .3s;
+        }
+        .metric:hover { border-color: var(--accent); }
+        .metric-label {
+            font-size: 12px; color: var(--text2);
+            text-transform: uppercase; letter-spacing: .8px;
+            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .metric-label .icon {
+            width: 28px; height: 28px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+        .metric-num {
+            font-size: 32px; font-weight: 700; line-height: 1;
+            margin-bottom: 8px;
+        }
+        .metric-unit { font-size: 16px; font-weight: 400; color: var(--text2); margin-left: 4px; }
+        .metric-tag {
+            display: inline-block; font-size: 11px; font-weight: 600;
+            padding: 3px 8px; border-radius: 4px;
+        }
+        .tag-ok  { background: rgba(34,197,94,.15); color: #4ade80; }
+        .tag-warn { background: rgba(245,158,11,.15); color: #fbbf24; }
+        .tag-bad { background: rgba(239,68,68,.15); color: #f87171; }
+
+        /* 信息卡片行 */
+        .info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+        }
+        .info-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+        .info-card h4 {
+            font-size: 13px; color: var(--text2); font-weight: 600;
+            margin-bottom: 14px;
+            text-transform: uppercase; letter-spacing: .8px;
+        }
+        .info-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        .info-item:last-child { border-bottom: none; }
+        .info-item .label { color: var(--text2); }
+        .info-item .val { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* 图表区域 */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .chart-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+        .chart-box h4 {
+            font-size: 13px; color: var(--text2); font-weight: 600;
+            margin-bottom: 16px;
+            text-transform: uppercase; letter-spacing: .8px;
+        }
+
+        /* 底部时间 */
+        .footer {
+            text-align: center; font-size: 12px; color: var(--text2);
+            padding: 12px 0;
+        }
+
+        /* 侧边栏 - 设备控制 */
+        .control-list { display: flex; flex-direction: column; gap: 10px; }
+        .control-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; border-radius: 8px;
+            background: var(--surface2); font-size: 13px;
+        }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background: #475569; border-radius: 22px; transition: .3s;
+        }
+        .slider::before {
+            content: ""; position: absolute; height: 16px; width: 16px;
+            left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s;
+        }
+        .switch input:checked + .slider { background: var(--green); }
+        .switch input:checked + .slider::before { transform: translateX(18px); }
+
+        /* 响应式 */
+        @media (max-width: 1400px) {
+            .metrics { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar {
+                position: relative; height: auto;
+                flex-direction: row; flex-wrap: wrap;
+                padding: 16px;
+            }
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+            .info-row { grid-template-columns: 1fr; }
+            .charts-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .metrics { grid-template-columns: 1fr; }
+            .main { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">⛑</div>
+            <div class="logo-text">智能头盔</div>
+        </div>
+
+        <div class="device-block">
+            <h3>设备状态</h3>
+            <div class="device-status">
+                <span class="dot off" id="statusDot"></span>
+                <span id="statusText">设备离线</span>
+                <small id="lastUpdate">--</small>
+            </div>
+        </div>
+
+        <div class="device-block">
+            <h3>安全报警</h3>
+            <div class="alarm-list">
+                <div class="alarm-row"><span class="dot on" id="fallIndicator"></span>跌倒检测</div>
+                <div class="alarm-row"><span class="dot on" id="collisionIndicator"></span>碰撞检测</div>
+                <div class="alarm-row"><span class="dot on" id="tempIndicator"></span>温度报警</div>
+                <div class="alarm-row"><span class="dot on" id="mq2Indicator"></span>烟雾报警</div>
+                <div class="alarm-row"><span class="dot on" id="hrIndicator"></span>心率异常</div>
+                <div class="alarm-row"><span class="dot on" id="spo2Indicator"></span>血氧异常</div>
+            </div>
+        </div>
+
+        <div class="device-block">
+            <h3>设备控制</h3>
+            <div class="control-list">
+                <div class="control-row">
+                    <span>💡 LED 灯</span>
+                    <label class="switch">
+                        <input type="checkbox" id="ledSwitch" onchange="sendCommand('LED', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="control-row">
+                    <span>🌀 风扇</span>
+                    <label class="switch">
+                        <input type="checkbox" id="fanSwitch" onchange="sendCommand('FAN', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="main">
+        <div class="alert-bar" id="alertBanner">
+            <strong>⚠ 警告</strong>
+            <span id="alertMessage"></span>
+        </div>
+
+        <!-- 核心指标 -->
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label"><span class="icon" style="background:rgba(239,68,68,.15);">🌡</span>温度</div>
+                <div class="metric-num"><span id="tempValue">--</span><span class="metric-unit">°C</span></div>
+                <span class="metric-tag tag-ok" id="tempStatus">正常</span>
+            </div>
+            <div class="metric">
+                <div class="metric-label"><span class="icon" style="background:rgba(59,130,246,.15);">💧</span>湿度</div>
+                <div class="metric-num"><span id="humiValue">--</span><span class="metric-unit">%</span></div>
+                <span class="metric-tag tag-ok" id="humiStatus">正常</span>
+            </div>
+            <div class="metric">
+                <div class="metric-label"><span class="icon" style="background:rgba(168,85,247,.15);">💨</span>烟雾</div>
+                <div class="metric-num"><span id="ppmValue">--</span><span class="metric-unit">ppm</span></div>
+                <span class="metric-tag tag-ok" id="ppmStatus">正常</span>
+            </div>
+            <div class="metric">
+                <div class="metric-label"><span class="icon" style="background:rgba(236,72,153,.15);">❤️</span>心率</div>
+                <div class="metric-num"><span id="hrValue">--</span><span class="metric-unit">bpm</span></div>
+                <span class="metric-tag tag-ok" id="hrStatus">正常</span>
+            </div>
+            <div class="metric">
+                <div class="metric-label"><span class="icon" style="background:rgba(6,182,212,.15);">🫁</span>血氧</div>
+                <div class="metric-num"><span id="spo2Value">--</span><span class="metric-unit">%</span></div>
+                <span class="metric-tag tag-ok" id="spo2Status">正常</span>
+            </div>
+        </div>
+
+        <!-- 详细信息 -->
+        <div class="info-row">
+            <div class="info-card">
+                <h4>📍 位置信息</h4>
+                <div class="info-item"><span class="label">纬度</span><span class="val" id="latValue">--</span></div>
+                <div class="info-item"><span class="label">经度</span><span class="val" id="lngValue">--</span></div>
+            </div>
+            <div class="info-card">
+                <h4>🎯 姿态角度</h4>
+                <div class="info-item"><span class="label">俯仰 Pitch</span><span class="val"><span id="pitchValue">--</span>°</span></div>
+                <div class="info-item"><span class="label">横滚 Roll</span><span class="val"><span id="rollValue">--</span>°</span></div>
+                <div class="info-item"><span class="label">偏航 Yaw</span><span class="val"><span id="yawValue">--</span>°</span></div>
+            </div>
+            <div class="info-card">
+                <h4>📊 数据统计</h4>
+                <div class="info-item"><span class="label">数据包</span><span class="val" id="dataCount">0</span></div>
+                <div class="info-item"><span class="label">更新时间</span><span class="val" id="updateTime">--</span></div>
+            </div>
+        </div>
+
+        <!-- 图表 -->
+        <div class="charts-row">
+            <div class="chart-box">
+                <h4>📈 环境数据趋势</h4>
+                <canvas id="envChart" height="90"></canvas>
+            </div>
+            <div class="chart-box">
+                <h4>💓 心率监测</h4>
+                <canvas id="hrChart" height="90"></canvas>
+            </div>
+        </div>
+
+        <div class="footer">智能头盔监控系统 v1.0</div>
+    </main>
+</div>
+
+<!-- SCRIPTS_PLACEHOLDER -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const socket = io(window.location.origin);
+    let dataCount = 0;
+
+    const chartOpts = (color, min, max) => ({
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+            legend: { display: true, position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, usePointStyle: true, padding: 12 } },
+            tooltip: { backgroundColor: '#1c2333', borderColor: '#2a3146', borderWidth: 1, padding: 10, titleFont: { size: 12 }, bodyFont: { size: 11 } }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { color: '#475569', font: { size: 10 }, maxTicksLimit: 10 } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#475569', font: { size: 10 } }, min, max }
+        },
+        interaction: { intersect: false, mode: 'index' },
+        elements: { point: { radius: 0, hoverRadius: 4 } }
+    });
+
+    const ds = (label, color) => ({ label, data: [], borderColor: color, backgroundColor: color + '18', borderWidth: 2, tension: 0.4, fill: true });
+
+    const envChart = new Chart(document.getElementById('envChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [ ds('温度°C','#ef4444'), ds('湿度%','#3b82f6'), ds('烟雾ppm','#a855f7') ] },
+        options: chartOpts(null, undefined, undefined)
+    });
+
+    const hrChart = new Chart(document.getElementById('hrChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [ ds('心率 bpm','#ec4899') ] },
+        options: chartOpts('#ec4899', 40, 140)
+    });
+
+    function updateDisplay(data) {
+        document.getElementById('tempValue').textContent = data.temp ? data.temp.toFixed(1) : '--';
+        document.getElementById('humiValue').textContent = data.humi ? data.humi.toFixed(1) : '--';
+        document.getElementById('ppmValue').textContent = data.ppm ? data.ppm.toFixed(2) : '--';
+        document.getElementById('hrValue').textContent = data.dis_hr || '--';
+        document.getElementById('spo2Value').textContent = data.dis_spo2 || '--';
+        document.getElementById('latValue').textContent = data.latitude ? data.latitude.toFixed(6) : '--';
+        document.getElementById('lngValue').textContent = data.longitude ? data.longitude.toFixed(6) : '--';
+        document.getElementById('pitchValue').textContent = data.pitch ? data.pitch.toFixed(1) : '--';
+        document.getElementById('rollValue').textContent = data.roll ? data.roll.toFixed(1) : '--';
+        document.getElementById('yawValue').textContent = data.yaw ? data.yaw.toFixed(1) : '--';
+        document.getElementById('updateTime').textContent = data.timestamp ? data.timestamp.split(' ')[1] : '--';
+        document.getElementById('lastUpdate').textContent = data.timestamp ? data.timestamp.split(' ')[1] : '--';
+
+        dataCount++;
+        document.getElementById('dataCount').textContent = dataCount;
+
+        setIndicator('fallIndicator', data.fall_flag);
+        setIndicator('collisionIndicator', data.collision_flag);
+        setIndicator('tempIndicator', data.temp_flag);
+        setIndicator('mq2Indicator', data.mq2_flag);
+        setIndicator('hrIndicator', data.heartrate_flag);
+        setIndicator('spo2Indicator', data.spo2_flag);
+
+        setTag('tempStatus', data.temp, 40);
+        setTag('humiStatus', data.humi, 80);
+        setTag('ppmStatus', data.ppm, 100);
+        setTagRange('hrStatus', data.dis_hr, 10, 200);
+        setTagRange('spo2Status', data.dis_spo2, 10, 100);
+
+        const dot = document.getElementById('statusDot');
+        const txt = document.getElementById('statusText');
+        if (data.online) { dot.className = 'dot on'; txt.textContent = '设备在线'; }
+        else { dot.className = 'dot off'; txt.textContent = '设备离线'; }
+
+        checkAlerts(data);
+    }
+
+    function setIndicator(id, flag) {
+        const el = document.getElementById(id);
+        el.className = flag ? 'dot alert' : 'dot on';
+    }
+
+    function setTag(id, val, threshold) {
+        const el = document.getElementById(id);
+        if (!val) { el.textContent = '无数据'; el.className = 'metric-tag tag-ok'; return; }
+        if (val > threshold) { el.textContent = '超标'; el.className = 'metric-tag tag-bad'; }
+        else if (val > threshold * 0.8) { el.textContent = '偏高'; el.className = 'metric-tag tag-warn'; }
+        else { el.textContent = '正常'; el.className = 'metric-tag tag-ok'; }
+    }
+
+    function setTagRange(id, val, min, max) {
+        const el = document.getElementById(id);
+        if (!val) { el.textContent = '无数据'; el.className = 'metric-tag tag-ok'; return; }
+        if (val < min || val > max) { el.textContent = '异常'; el.className = 'metric-tag tag-bad'; }
+        else { el.textContent = '正常'; el.className = 'metric-tag tag-ok'; }
+    }
+
+    function checkAlerts(data) {
+        const alerts = [];
+        if (data.fall_flag) alerts.push('跌倒');
+        if (data.collision_flag) alerts.push('碰撞');
+        if (data.temp_flag || data.temp > 40) alerts.push('高温');
+        if (data.mq2_flag || data.ppm > 100) alerts.push('烟雾');
+        if (data.heartrate_flag || (data.dis_hr && (data.dis_hr < 10 || data.dis_hr > 200))) alerts.push('心率');
+        if (data.spo2_flag || (data.dis_spo2 && data.dis_spo2 < 10)) alerts.push('血氧');
+        const bar = document.getElementById('alertBanner');
+        const msg = document.getElementById('alertMessage');
+        if (alerts.length) { msg.textContent = alerts.join(' / '); bar.classList.add('show'); }
+        else { bar.classList.remove('show'); }
+    }
+
+    function updateChart(data) {
+        const max = 50;
+        const t = data.timestamp ? data.timestamp.split(' ')[1] : '';
+        envChart.data.labels.push(t);
+        envChart.data.datasets[0].data.push(data.temp || 0);
+        envChart.data.datasets[1].data.push(data.humi || 0);
+        envChart.data.datasets[2].data.push(data.ppm || 0);
+        if (envChart.data.labels.length > max) { envChart.data.labels.shift(); envChart.data.datasets.forEach(d => d.data.shift()); }
+        envChart.update('none');
+
+        if (data.dis_hr && data.dis_hr > 0) {
+            hrChart.data.labels.push(t);
+            hrChart.data.datasets[0].data.push(data.dis_hr);
+            if (hrChart.data.labels.length > max) { hrChart.data.labels.shift(); hrChart.data.datasets[0].data.shift(); }
+            hrChart.update('none');
+        }
+    }
+
+    const cmdPending = {};
+    function sendCommand(device, isOn) {
+        if (cmdPending[device]) return;
+        cmdPending[device] = true;
+        const action = isOn ? 'ON' : 'OFF';
+        const sw = document.getElementById(device === 'LED' ? 'ledSwitch' : 'fanSwitch');
+        const label = sw.closest('.switch');
+        label.style.opacity = '0.5';
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device, action })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.status === 'ok') console.log(`[CMD] ${device} -> ${action} OK`);
+            else console.error(`[CMD] 失败:`, d.message);
+        })
+        .catch(e => console.error('[CMD] 请求异常:', e))
+        .finally(() => { cmdPending[device] = false; label.style.opacity = '1'; });
+    }
+
+    socket.on('connect', () => {
+        console.log('WS connected');
+        clearInterval(pollTimer);
+    });
+    socket.on('sensor_data', d => { updateDisplay(d); updateChart(d); });
+    socket.on('disconnect', () => {
+        console.log('WS disconnected');
+        startPolling();
+    });
+
+    // HTTP轮询兜底：WebSocket断开时自动启用
+    let pollTimer = null;
+    function startPolling() {
+        if (pollTimer) return;
+        pollTimer = setInterval(() => {
+            fetch('/api/latest').then(r => r.json()).then(d => {
+                updateDisplay(d);
+                updateChart(d);
+            }).catch(() => {});
+        }, 2000);
+    }
+    // 3秒后如果WS还没连上，启动轮询
+    setTimeout(() => { if (!socket.connected) startPolling(); }, 3000);
+
+    fetch('/api/history')
+        .then(r => r.json())
+        .then(data => {
+            if (data.timestamps && data.timestamps.length > 0) {
+                const max = 50, start = Math.max(0, data.timestamps.length - max);
+                envChart.data.labels = data.timestamps.slice(start).map(t => t.split(' ')[1]);
+                envChart.data.datasets[0].data = data.temp.slice(start);
+                envChart.data.datasets[1].data = data.humi.slice(start);
+                envChart.data.datasets[2].data = data.ppm.slice(start);
+                envChart.update();
+                if (data.dis_hr && data.dis_hr.length > 0) {
+                    hrChart.data.labels = data.timestamps.slice(start).map(t => t.split(' ')[1]);
+                    hrChart.data.datasets[0].data = data.dis_hr.slice(start);
+                    hrChart.update();
+                }
+            }
+        }).catch(e => console.error(e));
+</script>
+</body>
+</html>

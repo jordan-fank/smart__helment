@@ -213,20 +213,22 @@ void mpu6050_task(void)
 
     // ---------------------------------------------------------
     // 碰撞检测 (Collision) - 增加去抖
+    // 修改逻辑：只报警一次，不自动清零
     // ---------------------------------------------------------
     if (AVM > COLLISION_THR && GVM > STATIC_GYRO_THR)
     {
         collision_count++;
         if (collision_count >= COLLISION_DEBOUNCE)
         {
-            collision_flag = 1;
+            if (collision_flag == 0)  // 只报警一次
+                collision_flag = 1;
             // my_printf(&huart1, "WARNING: Collision! Force: %.2fg\r\n", (float)AVM/ACCEL_1G);
         }
     }
     else
     {
         collision_count = 0;
-        collision_flag = 0;
+        // 不自动清零，由语音模块清零
     }
 
     // ---------------------------------------------------------
@@ -259,12 +261,13 @@ void mpu6050_task(void)
         case 2: // 状态2: 检查是否无法动弹
             if (GVM < STATIC_GYRO_THR)
             {
-                fall_flag = 1;
+                if (fall_flag == 0)  // 只报警一次
+                    fall_flag = 1;
                 // my_printf(&huart1, "ALARM: Fall Detected!\r\n");
             }
             else if ((fabs(pitch) < 30) && (fabs(roll) < 30))
             {
-                fall_flag = 0;
+                // 用户恢复正常姿态，退出跌倒状态（但不清零标志位，由语音模块清零）
                 fall_state = 0;
             }
             break;

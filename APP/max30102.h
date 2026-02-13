@@ -7,7 +7,7 @@
 // ���ʲ���ֵ��ÿ�β����̶�������ֵ
 #define HEART_RATE_COMPENSATION 10
 // �������ڴ�С
-#define WINDOW_SIZE 20
+#define WINDOW_SIZE 10
 // ��ͨ�˲������˲�ϵ��
 #define ALPHA 0.05     
 

@@ -1062,6 +1062,16 @@
               <FileType>1</FileType>
               <FilePath>..\APP\asrpro.c</FilePath>
             </File>
+            <File>
+              <FileName>esp01s.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\esp01s.c</FilePath>
+            </File>
+            <File>
+              <FileName>control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\control.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

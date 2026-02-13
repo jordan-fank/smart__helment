@@ -64,42 +64,56 @@
 
 #include "sensor.h"
 
+#include "esp01s.h"
+#include "control.h"
 
-
+extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart3_rx;
 
 //外部引用的变量
 extern float temp;		//温度
 extern float humi;		//湿度
 
-extern float ppm;		//浓度
-extern const unsigned char BMP_Photo[];	//显示图片
+extern float ppm;		//烟雾浓度
 
 
 extern uint8_t dis_hr;   // 显示的心率值
 extern uint8_t dis_spo2; // 显示的血氧值
 
-extern bool heartrate_flag;
+extern float longitude; // 经度
+extern float latitude;  // 纬度
+
+extern float pitch, roll, yaw;    // 欧拉角（姿态数据）
+
+extern bool temp_flag;	//温度过高标志
+
+extern bool mq2_flag;
+
+extern bool heartrate_flag;	//心率异常标志位
+extern bool spo2_flag;		//血氧异常标志位
 
 extern bool fall_flag;			//摔倒标志
 extern bool collision_flag;		//碰撞标志
 
-extern float longitude; // 经度
-extern float latitude;  // 纬度
+extern bool fall_flag;			//摔倒标志
+extern bool collision_flag;		//碰撞标志
+
+extern bool alarm_flag;			//报警标志
+
+
 
 extern uint8_t oled_page;
 
 
-extern bool fall_flag;			//摔倒标志
-extern bool collision_flag;		//碰撞标志
 
-extern bool alarm_flag;
+extern bool LED_ON_flag;
+extern bool FAN_ON_flag;
 
-extern bool mq2_flag;
 
-extern bool heartrate_flag;
-extern bool spo2_flag;
 
-extern bool temp_flag;
+
+
+
 
 
 

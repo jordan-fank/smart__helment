@@ -37,13 +37,15 @@
 "smart_helmet\oled_app.o"
 "smart_helmet\sensor.o"
 "smart_helmet\asrpro.o"
+"smart_helmet\esp01s.o"
+"smart_helmet\control.o"
 "smart_helmet\inv_mpu.o"
 "smart_helmet\inv_mpu_dmp_motion_driver.o"
 "smart_helmet\algorithm.o"
 "smart_helmet\max30102_control.o"
 "smart_helmet\soft_iic.o"
 "smart_helmet\ringbuffer.o"
-"smart_helmet\oled_1.o"
+"smart_helmet\oled.o"
 --library_type=microlib --strict --scatter "smart_helmet\smart_helmet.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

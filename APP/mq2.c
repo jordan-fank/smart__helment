@@ -75,9 +75,13 @@ void mq2_task(void)
 	Rs=((5.0f-mq2_voltage)/mq2_voltage)*RL;
 
     ppm = pow((Rs / (R0 * 11.5428)), -1.5278); // Rs/R0 = 11.5428*ppm^(-0.6549);
-	
-	mq2_flag = (ppm > 100);
-	
+
+	// 只在烟雾浓度异常时设置标志位，不自动清零（由语音模块清零）
+	if (ppm > 100) {
+		if (mq2_flag == 0)  // 只报警一次
+			mq2_flag = 1;
+	}
+
 	printf("{ppm}ppm = %.2f\r\n",ppm);
 }
 

@@ -27,7 +27,7 @@ static uint8_t g_measuring = 0;
 
 // 手指稳定检测：连续N次检测到手指才算真正有手指
 static uint8_t g_finger_stable_count = 0;
-#define FINGER_STABLE_COUNT 5       // 连续5次检测到才算
+#define FINGER_STABLE_COUNT 2       // 连续2次检测到才算（降低要求，加快响应）
 
 // 当前手指状态（供外部发送报警时检查）
 uint8_t max30102_finger_detected = 0;
@@ -91,9 +91,9 @@ void Update_Signal_Min_Max(void)
 uint8_t dis_hr = 0;
 uint8_t dis_spo2 = 0;
 
-// 手指检测阈值 - 大幅提高阈值以过滤噪声
-#define FINGER_IR_THRESHOLD 30000   // IR平均值阈值（原来5000）
-#define FINGER_IR_RANGE 2000        // IR变化幅度阈值（原来200）
+// 手指检测阈值 - 平衡灵敏度和准确性
+#define FINGER_IR_THRESHOLD 15000   // IR平均值阈值（适中，避免误检测）
+#define FINGER_IR_RANGE 800         // IR变化幅度阈值（需要有脉搏波动）
 
 /**
  * @brief 实时检查是否有手指
@@ -138,8 +138,8 @@ void max30102_task(void)
             break;
 
         case 1: // 采集中
-            // 每次任务读取多个样本
-            for (uint16_t s = 0; s < 50; s++)
+            // 每次任务读取20个样本（平衡速度和准确性）
+            for (uint16_t s = 0; s < 20; s++)
             {
                 uint8_t temp[6];
                 uint32_t timeout = 30000;
@@ -184,11 +184,11 @@ void max30102_task(void)
             }
             else
             {
-                // 没有检测到手指，立即清零
-                dis_hr = 0;
-                dis_spo2 = 0;
-                heartrate_flag = 0;
-                spo2_flag = 0;
+                // 没有检测到手指，保持上次测量值（不清零）
+                // dis_hr = 0;          // 不清零，保持上次测量值
+                // dis_spo2 = 0;        // 不清零，保持上次测量值
+                // heartrate_flag = 0;  // 不自动清零，等语音模块清零
+                // spo2_flag = 0;       // 不自动清零，等语音模块清零
                 g_finger_stable_count = 0;  // 重置稳定计数
             }
 
@@ -209,7 +209,7 @@ void max30102_task(void)
                 Calculate_Heart_Rate_and_SpO2();
                 max30102_data.heart_rate += HEART_RATE_COMPENSATION;
 
-                // 有效数据才更新显示
+                // 有效数据才更新显示（保持上次有效值，不立即清零）
                 if (max30102_data.heart_rate > 20 &&
                     max30102_data.heart_rate < 200 &&
                     max30102_data.spO2 >= 50 &&
@@ -218,25 +218,24 @@ void max30102_task(void)
                     dis_hr = (uint8_t)max30102_data.heart_rate;
                     dis_spo2 = (uint8_t)max30102_data.spO2;
                 }
-                else
-                {
-                    // 无效数据不显示
-                    dis_hr = 0;
-                    dis_spo2 = 0;
-                }
+                // 无效数据时保持上次的值，不清零（避免频繁跳变）
 
                 // 检查异常（只有稳定检测到手指后才检查）
+                // 修改逻辑：只在数据变化时设置标志位，不会自动清零
                 if (dis_hr > 0)
                 {
-                    if (dis_hr < 50 || dis_hr > 180)
-                        heartrate_flag = 1;
-                    else
-                        heartrate_flag = 0;
+                    // 只在异常时设置标志位，不在正常时清零（由语音模块清零）
+                    if (dis_hr < 10 || dis_hr > 280)
+                    {
+                        if (heartrate_flag == 0)  // 只报警一次
+                            heartrate_flag = 1;
+                    }
 
-                    if (dis_spo2 < 90)
-                        spo2_flag = 1;
-                    else
-                        spo2_flag = 0;
+                    if (dis_spo2 < 10)
+                    {
+                        if (spo2_flag == 0)  // 只报警一次
+                            spo2_flag = 1;
+                    }
                 }
             }
             // 继续停留在 case 1 采集数据

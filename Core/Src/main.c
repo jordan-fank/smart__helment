@@ -17,7 +17,13 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-
+#include "main.h"
+#include "adc.h"
+#include "dma.h"
+#include "i2c.h"
+#include "tim.h"
+#include "usart.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -122,14 +128,20 @@ int main(void)
 	AlarmQueue_Init(&g_alarm_queue);  // 初始化报警队列
 
 	asrpro_init();
+	
+	
+	ESP_Init();
+	
+	Device_Init();
+	control_init();
 
 	scheduler_init();
 	
 	OLED_BootAnimation();
 
 
-	printf("Init OK \r\n");
-	my_printf(&huart1, "very ok !\r\n");
+//	printf("Init OK \r\n");
+//	my_printf(&huart1, "very ok !\r\n");
 
 
   /* USER CODE END 2 */

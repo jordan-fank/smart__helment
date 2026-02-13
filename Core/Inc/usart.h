@@ -43,7 +43,7 @@ extern UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN Private defines */
 
-extern DMA_HandleTypeDef hdma_usart2_rx;
+
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
