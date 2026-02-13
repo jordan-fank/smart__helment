@@ -6,18 +6,17 @@ bool alarm_flag = 1;                    // 报警使能标志
 AlarmQueue_t g_alarm_queue;             // 报警队列（全局）
 
 /*-------------------- 优先级映射表 --------------------*/
-/* 用于根据标志位快速查找对应的优先级 */
-static const uint8_t flag_to_priority_map[6] = {
-    [0] = ALARM_PRIO_FALL,       // fall_flag      -> 0
-    [1] = ALARM_PRIO_COLLISION,  // collision_flag -> 1
-    [2] = ALARM_PRIO_TEMP,       // temp_flag      -> 2
-    [3] = ALARM_PRIO_MQ2,        // mq2_flag       -> 3
-    [4] = ALARM_PRIO_HEART,      // heartrate_flag -> 4
-    [5] = ALARM_PRIO_SPO2,       // spo2_flag      -> 5
+static const uint8_t flag_to_priority_map[7] = {
+    [0] = ALARM_PRIO_FALL,       // fall_flag
+    [1] = ALARM_PRIO_COLLISION,  // collision_flag
+    [2] = ALARM_PRIO_TEMP,       // temp_flag
+    [3] = ALARM_PRIO_MQ2,        // mq2_flag
+    [4] = ALARM_PRIO_HEART,      // heartrate_flag
+    [5] = ALARM_PRIO_SPO2,       // spo2_flag
+    [6] = ALARM_PRIO_RAIN,       // rain_flag
 };
 
 /*-------------------- 报警消息表 --------------------*/
-/* 存储各优先级的报警消息 */
 static const char* alarm_messages[] = {
     [ALARM_PRIO_FALL]      = "fall",
     [ALARM_PRIO_COLLISION] = "collision",
@@ -25,18 +24,23 @@ static const char* alarm_messages[] = {
     [ALARM_PRIO_MQ2]       = "density",
     [ALARM_PRIO_HEART]     = "heartrate",
     [ALARM_PRIO_SPO2]      = "spo2",
+    [ALARM_PRIO_RAIN]      = "rain",
 };
 
 /*-------------------- 报警标志位指针数组 --------------------*/
-/* 用于遍历和检查各报警标志位 */
-static bool* alarm_flags[] = {
+#define ALARM_FLAG_COUNT 7
+static bool* alarm_flags[ALARM_FLAG_COUNT] = {
     &fall_flag,
     &collision_flag,
     &temp_flag,
     &mq2_flag,
     &heartrate_flag,
     &spo2_flag,
+    &rain_flag,
 };
+
+/*-------------------- 上一次标志位状态（用于边沿检测） --------------------*/
+static bool alarm_flags_prev[ALARM_FLAG_COUNT] = {0};
 
 /**
  * @brief  初始化报警队列
@@ -148,28 +152,29 @@ void AlarmQueue_ClearByPriority(AlarmQueue_t* queue, AlarmPriority_t priority)
 }
 
 /**
- * @brief  扫描所有报警标志位，将活跃的报警加入队列
- * @note   对于心率和血氧报警，需要同时检测到手指才加入队列
+ * @brief  扫描所有报警标志位，仅在上升沿（0→1）时入队报警
+ * @note   每种报警只在状态变化时触发一次，不会重复报警
  */
 static void Alarm_ScanAndEnqueue(void)
 {
-    /* 遍历所有报警标志位 */
-    for (uint8_t i = 0; i < 6; i++) {
-        if (*(alarm_flags[i]) == 1) {
-            /* 心率(4)和血氧(5)报警需要检查手指状态 */
+    for (uint8_t i = 0; i < ALARM_FLAG_COUNT; i++) {
+        bool cur = *(alarm_flags[i]);
+
+        // 只在上升沿（上次为0，这次为1）时入队
+        if (cur && !alarm_flags_prev[i]) {
+            // 心率(4)和血氧(5)报警需要检查手指状态
             if (i == 4 || i == 5) {
                 if (max30102_finger_detected == 0) {
-                    /* 没有手指，不加入队列，直接清除标志 */
-                    *(alarm_flags[i]) = 0;
+                    alarm_flags_prev[i] = cur;
                     continue;
                 }
             }
-            /* 标志位为1，尝试加入队列 */
             AlarmPriority_t prio = (AlarmPriority_t)flag_to_priority_map[i];
             AlarmQueue_Push(&g_alarm_queue, prio, alarm_messages[prio]);
-            /* 清除标志位（因为已经加入队列） */
-            *(alarm_flags[i]) = 0;
         }
+
+        // 记录本次状态，供下次比较
+        alarm_flags_prev[i] = cur;
     }
 }
 

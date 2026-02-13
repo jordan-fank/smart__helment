@@ -67,6 +67,9 @@
 #include "esp01s.h"
 #include "control.h"
 
+#include "rain.h"
+
+
 extern DMA_HandleTypeDef hdma_usart2_rx;
 extern DMA_HandleTypeDef hdma_usart3_rx;
 
@@ -95,9 +98,6 @@ extern bool spo2_flag;		//血氧异常标志位
 extern bool fall_flag;			//摔倒标志
 extern bool collision_flag;		//碰撞标志
 
-extern bool fall_flag;			//摔倒标志
-extern bool collision_flag;		//碰撞标志
-
 extern bool alarm_flag;			//报警标志
 
 
@@ -109,7 +109,8 @@ extern uint8_t oled_page;
 extern bool LED_ON_flag;
 extern bool FAN_ON_flag;
 
-
+extern bool rain_flag;
+extern uint16_t rain_vlaue;
 
 
 

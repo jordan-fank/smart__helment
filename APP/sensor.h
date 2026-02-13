@@ -11,6 +11,7 @@ typedef enum {
     ALARM_PRIO_MQ2       = 3,  // 烟雾浓度 - 中优先级 (火灾风险)
     ALARM_PRIO_HEART     = 4,  // 心率异常 - 低优先级
     ALARM_PRIO_SPO2      = 5,  // 血氧异常 - 最低优先级
+    ALARM_PRIO_RAIN      = 6,  // 下雨报警
     ALARM_PRIO_NONE      = 255 // 无报警
 } AlarmPriority_t;
 

@@ -106,7 +106,9 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
+	HAL_ADCEx_Calibration_Start(&hadc2);  // ADC2校准（必须，否则可能读到0）
 	delay_init();
 	
 	

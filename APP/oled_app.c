@@ -174,5 +174,20 @@ void oled_task(void)
             sprintf(buffer,"Yaw  :%5.1f", yaw);
             OLED_ShowStr(0, 4, buffer);
             break;
+		case 7:
+				if(rain_flag)
+				{
+					sprintf(buffer,"rain_value:%d", rain_vlaue);
+					OLED_ShowStr(0, 0, buffer);
+					
+					OLED_ShowStr(0, 2, "raining");
+				}
+				else
+				{
+					sprintf(buffer,"rain_value:%d", rain_vlaue);
+					OLED_ShowStr(0, 0, buffer);
+					OLED_ShowStr(0, 2, "NO raining");
+				}
+            break;
     }
 }

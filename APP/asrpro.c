@@ -85,6 +85,10 @@ void asrpro_task(void)
 		{
 			oled_page = 6;
 		}
+		else if(strstr((char*)uart_rx_buffer, "page6"))
+		{
+			oled_page = 7;
+		}
 		else if(strstr((char*)uart_rx_buffer, "LED_ON"))
 		{
 			LED_ON_flag = 1;

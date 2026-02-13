@@ -22,6 +22,7 @@ static task_t scheduler_task[] =
 {
 	  {mpu6050_task, 50, 0, TASK_PRIO_CRITICAL},		// MPU6050 姿态传感器任务，最高优先级
       {mq2_task, 100, 0, TASK_PRIO_NORMAL},			// MQ2 气体传感器任务
+	  {rain_task, 100, 0, TASK_PRIO_NORMAL},			// 雨滴传感器任务
       {dht11_task, 100, 0, TASK_PRIO_NORMAL},		// DHT11 温湿度传感器任务
       {max30102_task, 200, 0, TASK_PRIO_HIGH},		// MAX30102 心率血氧传感器任务，高优先级
       {oled_task, 10, 0, TASK_PRIO_LOW},			// OLED显示任务，低优先级

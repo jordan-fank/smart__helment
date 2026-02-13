@@ -30,18 +30,8 @@ void ESP_Init(void);
 void ESP_Report_Env(void);
 void ESP_Report_Body(void);
 void ESP_Report_GPS(void);
-void ESP_Report_Safety(void);
-
-// 拆分上报函数（推荐使用，减少单次数据量）
-void ESP_Report_Euler(void);   // 只上报欧拉角
-void ESP_Report_Flags(void);   // 只上报标志位
-
-// 合并上报函数（可选，避免超长度限制）
-void ESP_Report_All(void);
-
-// 测试函数：分开上报欧拉角和标志位
-void ESP_Report_Euler_Only(void);
-void ESP_Report_Flags_Only(void);
+void ESP_Report_Euler(void);
+void ESP_Report_Flags(void);
 
 
 

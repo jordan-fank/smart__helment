@@ -323,28 +323,6 @@ void parse_uart_command(uint8_t *buffer, uint16_t length)
     }
 }
 
-/**
- * @brief  将解析好的 GPS 数据格式化打印到串口
- */
-void printGpsBuffer(void)
-{
-    // 逻辑开关：只有当 parse_uart_command 成功解析出有效位置时，才打印
-    if (Save_Data.isParseData) {
-        // 打印时间（UTC格式）和定位状态（Fixed代表已锁定）
-        // my_printf(&huart1, ">>> [GPS INFO] Time:%s, Stat:Fixed\r\n", Save_Data.UTCTime);
-
-        // 打印最终的十进制度坐标，保留 6 位小数（约 0.1 米精度）
-        // %c 打印方向字符（N/S, E/W）
-        // my_printf(&huart1, "    Lat:%.6f (%c), Lon:%.6f (%c)\r\n",
-        //           g_LatAndLongData.latitude, Save_Data.N_S[0],
-        //           g_LatAndLongData.longitude, Save_Data.E_W[0]);
-    } else {
-        // 如果 isParseData 为假，说明还没攒够数据或者正在室内，搜不到星
-        // my_printf(&huart1, ">>> [GPS INFO] Searching Satellites...\r\n");
-    }
-	
-	
-}
 
 
 
@@ -365,8 +343,6 @@ void atgm336h_task(void)
 
 	// 第三步 调用命令解析函数
 	parse_uart_command(uart_dma_buffer, length);
-	
-	printGpsBuffer();
 	//打印所有数据
 //printf("\r\n[RAW LEN: %d] Content:\r\n%s\r\n--------------------\r\n", length, uart_dma_buffer);
 	

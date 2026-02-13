@@ -5,54 +5,12 @@ extern float pitch, roll, yaw;
 
 // 简单的打印函数，方便发送串口数据
 void ESP_Send(char *fmt, ...) {
-    char buf[512];
+    char buf[384];
     va_list arg;
     va_start(arg, fmt);
     vsnprintf(buf, sizeof(buf), fmt, arg);
     va_end(arg);
     HAL_UART_Transmit(&huart3, (uint8_t *)buf, strlen(buf), 1000);
-}
-
-/**
- * @brief 构建JSON字符串（用于MQTT发布）
- * @param json_buf 输出缓冲区
- * @param buf_size 缓冲区大小
- * @param properties JSON属性字符串（已格式化好的键值对）
- */
-static void Build_JSON(char *json_buf, size_t buf_size, const char *properties) {
-    snprintf(json_buf, buf_size,
-        "{\"services\":[{\"service_id\":\"SensorData\",\"properties\":{%s}}]}",
-        properties);
-}
-
-/**
- * @brief 发送MQTT消息
- * @param json JSON字符串（已包含转义的引号）
- */
-static void MQTT_Publish(const char *json) {
-    // 检查JSON长度
-    size_t json_len = strlen(json);
-
-    if (json_len > 200) {
-        my_printf(&huart1, "WARN: JSON too long (%d bytes)\r\n", json_len);
-        return;
-    }
-
-    // 构建完整的AT指令
-    char at_cmd[512];
-    int len = snprintf(at_cmd, sizeof(at_cmd),
-        "AT+MQTTPUB=0,\"%s\",\"%s\",0,0\r\n",
-        HUAWEI_PUB_TOPIC, json);
-
-    if (len > 0 && len < sizeof(at_cmd)) {
-        // 发送AT指令
-        HAL_UART_Transmit(&huart3, (uint8_t *)at_cmd, len, 1000);
-
-        // 调试输出
-        my_printf(&huart1, "MQTT Pub: %d bytes\r\n", json_len);
-    } else {
-        my_printf(&huart1, "ERROR: AT command too long\r\n");
-    }
 }
 
 /**
@@ -143,80 +101,5 @@ void ESP_Report_Flags(void) {
              HUAWEI_PUB_TOPIC, ff, cf, tf, mf);
 }
 
-/**
- * @brief 上报函数4：姿态与安全 (合并版本，保留备用)
- */
-void ESP_Report_Safety(void) {
-    // 显式转换bool为int，确保格式正确
-    int ff = (int)fall_flag;
-    int cf = (int)collision_flag;
-    int tf = (int)temp_flag;
-    int mf = (int)mq2_flag;
-
-    // 检查浮点数是否有效（避免NaN或Inf）
-    float p = (pitch != pitch) ? 0.0f : pitch;  // NaN检查
-    float r = (roll != roll) ? 0.0f : roll;
-    float y = (yaw != yaw) ? 0.0f : yaw;
-
-    // 注意：属性名必须与华为云物模型完全一致（小写pitch/roll/yaw）
-    ESP_Send("AT+MQTTPUB=0,\"%s\",\"{\\\"services\\\":[{\\\"service_id\\\":\\\"SensorData\\\"\\,\\\"properties\\\":{\\\"pitch\\\":%.1f\\,\\\"roll\\\":%.1f\\,\\\"yaw\\\":%.1f\\,\\\"fall_flag\\\":%d\\,\\\"collision_flag\\\":%d\\,\\\"temp_flag\\\":%d\\,\\\"mq2_flag\\\":%d}}]}\",0,0\r\n",
-             HUAWEI_PUB_TOPIC, p, r, y, ff, cf, tf, mf);
-}
-
-/**
- * @brief 合并上报所有数据（可选方案，但可能超长度限制）
- * 注意：此函数会将所有数据合并为一条MQTT消息
- * 如果数据过多可能超过ESP8266的256字节限制，请谨慎使用
- */
-void ESP_Report_All(void) {
-    char properties[400];
-    char json[512];
-
-    // 合并所有属性（注意长度控制）
-    snprintf(properties, sizeof(properties),
-        "\"temp\":%.1f,\"humi\":%.1f,\"ppm\":%.2f,"
-        "\"dis_hr\":%d,\"dis_spo2\":%d,"
-        "\"latitude\":%.6f,\"longitude\":%.6f,"
-        "\"pitch\":%.1f,\"roll\":%.1f,\"yaw\":%.1f,"
-        "\"fall_flag\":%d,\"collision_flag\":%d,"
-        "\"heartrate_flag\":%d,\"spo2_flag\":%d,"
-        "\"temp_flag\":%d,\"mq2_flag\":%d",
-        temp, humi, ppm,
-        dis_hr, dis_spo2,
-        latitude, longitude,
-        pitch, roll, yaw,
-        fall_flag, collision_flag,
-        heartrate_flag, spo2_flag,
-        temp_flag, mq2_flag);
-
-    Build_JSON(json, sizeof(json), properties);
-    MQTT_Publish(json);
-}
-
-/**
- * @brief 测试函数：只上报欧拉角
- */
-void ESP_Report_Euler_Only(void) {
-    float p = (pitch != pitch) ? 0.0f : pitch;
-    float r = (roll != roll) ? 0.0f : roll;
-    float y = (yaw != yaw) ? 0.0f : yaw;
-
-    // 注意：属性名必须与华为云物模型完全一致（小写pitch/roll/yaw）
-    ESP_Send("AT+MQTTPUB=0,\"%s\",\"{\\\"services\\\":[{\\\"service_id\\\":\\\"SensorData\\\"\\,\\\"properties\\\":{\\\"pitch\\\":%.1f\\,\\\"roll\\\":%.1f\\,\\\"yaw\\\":%.1f}}]}\",0,0\r\n",
-             HUAWEI_PUB_TOPIC, p, r, y);
-}
-
-/**
- * @brief 测试函数：只上报标志位
- */
-void ESP_Report_Flags_Only(void) {
-    int ff = (int)fall_flag;
-    int cf = (int)collision_flag;
-    int tf = (int)temp_flag;
-    int mf = (int)mq2_flag;
-
-    ESP_Send("AT+MQTTPUB=0,\"%s\",\"{\\\"services\\\":[{\\\"service_id\\\":\\\"SensorData\\\"\\,\\\"properties\\\":{\\\"fall_flag\\\":%d\\,\\\"collision_flag\\\":%d\\,\\\"temp_flag\\\":%d\\,\\\"mq2_flag\\\":%d}}]}\",0,0\r\n",
-             HUAWEI_PUB_TOPIC, ff, cf, tf, mf);
-}
 
 
